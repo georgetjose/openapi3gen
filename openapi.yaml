@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+    title: Generated API
+    version: 1.0.0
+paths:
+    /hello:
+        get:
+            summary: Greet user
+            description: Returns a friendly greeting message
+            tags:
+                - hello
+            parameters:
+                - name: name
+                  in: query
+                  required: true
+                  schema:
+                    type: string
+    /user/{id}:
+        get:
+            summary: Get user by ID
+            description: Returns user data based on ID
+            tags:
+                - user
+            responses:
+                "200":
+                    description: Success
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserResponse'
+            parameters:
+                - name: name
+                  in: query
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+    /users:
+        post:
+            summary: Create a user
+            description: Creates a new user
+            tags:
+                - user
+            responses:
+                "201":
+                    description: Success
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserResponse'
+            parameters:
+                - name: name
+                  in: query
+                  required: true
+                  schema:
+                    type: string
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                description: '"User payload"'
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateUserRequest'
+components:
+    schemas:
+        CreateUserRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+                name:
+                    type: string
+        UserResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
