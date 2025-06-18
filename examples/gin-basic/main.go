@@ -33,14 +33,32 @@ func LegacyHello(c *gin.Context) {
 // @Description Returns user data based on ID
 // @Tags user
 // @Param id path string true "User ID"
-// @Param X-Correlation-ID header string true "Tracking ID for the request"
 // @Success 200 {object} UserResponse "Returns the user object with id and name"
 // @Header 200 X-RateLimit-Remaining string true "Remaining quota"
 // @Router /user/{id} [get]
-func GetUserHandler(c *gin.Context) {
+func GetUserByIDHandler(c *gin.Context) {
 	id := c.Param("id")
 	c.Header("X-RateLimit-Remaining", "29")
 	c.JSON(200, UserResponse{ID: id, Name: "George T Jose"})
+}
+
+// @Summary Search user by name
+// @Description Returns user data based on query param
+// @Tags user
+// @Param name query string true "Name of the user to search"
+// @Param X-Correlation-ID header string false "Tracking ID for the request"
+// @Success 200 {object} UserResponse "Returns the user object"
+// @Header 200 X-RateLimit-Remaining string true "Remaining quota"
+// @Router /user/search [get]
+func SearchUserHandler(c *gin.Context) {
+	name := c.Query("name")
+	correlationID := c.GetHeader("X-Correlation-ID")
+
+	c.Header("X-RateLimit-Remaining", "28")
+	c.JSON(200, UserResponse{
+		ID:   correlationID,
+		Name: name,
+	})
 }
 
 // @Summary Create a user
@@ -93,7 +111,9 @@ func main() {
 
 	r.GET("/hello-legacy", LegacyHello)
 
-	r.GET("/user/:id", GetUserHandler)
+	r.GET("/user/:id", GetUserByIDHandler)
+
+	r.GET("/user/search", SearchUserHandler)
 
 	r.POST("/users", CreateUserHandler)
 

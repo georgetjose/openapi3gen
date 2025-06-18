@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/georgetjose/openapi3gen/pkg/parser"
@@ -20,9 +21,6 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 		Schemas: make(map[string]*Schema),
 	}
 
-	var parameters []*ParameterObject
-	var requestBody *RequestBodyObject
-
 	for _, route := range routes {
 		pathItem, exists := openapi.Paths[route.Path]
 		if !exists {
@@ -30,7 +28,25 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 			openapi.Paths[route.Path] = pathItem
 		}
 
+		// 🔹 Reset parameters and requestBody per route
+		var parameters []*ParameterObject
+		var requestBody *RequestBodyObject
+
+		// 🔹 Deduplication map
+		seenParams := make(map[string]bool)
+
 		for _, p := range route.Params {
+			paramKey := p.In + ":" + p.Name
+			if seenParams[paramKey] {
+				continue // skip duplicate
+			}
+			seenParams[paramKey] = true
+
+			if p.In == "path" && !strings.Contains(route.Path, "{"+p.Name+"}") {
+				fmt.Printf("Warning: Path param '%s' not found in route path '%s'. Skipping.\n", p.Name, route.Path)
+				continue
+			}
+
 			parameters = append(parameters, &ParameterObject{
 				Name:        p.Name,
 				In:          p.In,
@@ -63,7 +79,7 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 			if m, ok := registry.Get(r.Model); ok {
 				refSchema := addComponentSchema(r.Model, m, registry, openapi.Components)
 
-				// Collect all headers for this response
+				// Collect response headers
 				headers := make(map[string]*HeaderObject)
 				for _, h := range route.Headers {
 					if h.StatusCode == statusCode {
@@ -80,6 +96,7 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 				if desc == "" {
 					desc = "Success"
 				}
+
 				responses[statusCode] = &ResponseWrapper{
 					Description: desc,
 					Content: map[string]MediaType{
@@ -92,6 +109,13 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 			}
 		}
 
+		// Ensure at least 1 response
+		if len(responses) == 0 {
+			responses["200"] = &ResponseWrapper{
+				Description: "OK",
+			}
+		}
+
 		op := &Operation{
 			Summary:     route.Summary,
 			Description: route.Description,
@@ -99,6 +123,10 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 			Parameters:  parameters,
 			RequestBody: requestBody,
 			Responses:   responses,
+		}
+
+		if route.Deprecated {
+			op.Deprecated = true
 		}
 
 		switch strings.ToLower(route.Method) {
@@ -117,14 +145,13 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 }
 
 func addComponentSchema(modelName string, model any, registry *ModelRegistry, components *Components) *Schema {
-	// If already registered, just return the $ref
+	// If already registered, return $ref
 	if _, exists := components.Schemas[modelName]; exists {
 		return &Schema{
 			Ref: "#/components/schemas/" + modelName,
 		}
 	}
 
-	// Generate and register schema
 	schema := GenerateSchemaFromStruct(model)
 	components.Schemas[modelName] = schema
 

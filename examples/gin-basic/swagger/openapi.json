@@ -1,0 +1,122 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Generated API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/hello": {
+      "get": {
+        "summary": "Greet user",
+        "description": "Returns a friendly greeting message",
+        "tags": [
+          "hello"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Name of the user"
+          }
+        ]
+      }
+    },
+    "/hello-legacy": {
+      "get": {
+        "summary": "Legacy greeting",
+        "description": "This endpoint is deprecated",
+        "tags": [
+          "legacy"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/user/search": {
+      "get": {
+        "summary": "Search user by name",
+        "description": "Returns user data based on query param",
+        "tags": [
+          "user"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Name of the user to search"
+          },
+          {
+            "name": "X-Correlation-ID",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tracking ID for the request"
+          }
+        ]
+      }
+    },
+    "/user/{id}": {
+      "get": {
+        "summary": "Get user by ID",
+        "description": "Returns user data based on ID",
+        "tags": [
+          "user"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "summary": "Create a user",
+        "description": "Creates a new user",
+        "tags": [
+          "user"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}
