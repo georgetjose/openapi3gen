@@ -88,7 +88,7 @@ func main() {
 	ui.RegisterSwaggerUI(r, "")
 	ui.RegisterSwaggerJSONHandler(r, openapi)
 
-	// Routes
+	// Routes available
 	r.GET("/hello", HelloHandler)
 
 	r.GET("/hello-legacy", LegacyHello)
