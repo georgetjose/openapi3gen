@@ -1,10 +1,11 @@
 package generator
 
 type Schema struct {
-	Type       string             `json:"type,omitempty" yaml:"type,omitempty"`
-	Properties map[string]*Schema `json:"properties,omitempty" yaml:"properties,omitempty"`
-	Items      *Schema            `json:"items,omitempty" yaml:"items,omitempty"`
-	Ref        string             `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	Type        string             `json:"type,omitempty" yaml:"type,omitempty"`
+	Properties  map[string]*Schema `json:"properties,omitempty" yaml:"properties,omitempty"`
+	Items       *Schema            `json:"items,omitempty" yaml:"items,omitempty"`
+	Ref         string             `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	Description string             `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
 type Components struct {
@@ -38,11 +39,13 @@ type Operation struct {
 	Responses   map[string]*ResponseWrapper `json:"responses,omitempty" yaml:"responses,omitempty"`
 	Parameters  []*ParameterObject          `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 	RequestBody *RequestBodyObject          `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
+	Deprecated  bool                        `json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 }
 
 type ResponseWrapper struct {
-	Description string               `json:"description" yaml:"description"`
-	Content     map[string]MediaType `json:"content,omitempty" yaml:"content,omitempty"`
+	Description string                   `json:"description" yaml:"description"`
+	Content     map[string]MediaType     `json:"content,omitempty" yaml:"content,omitempty"`
+	Headers     map[string]*HeaderObject `json:"headers,omitempty" yaml:"headers,omitempty"`
 }
 
 type MediaType struct {
@@ -50,14 +53,20 @@ type MediaType struct {
 }
 
 type ParameterObject struct {
-	Name     string  `json:"name" yaml:"name"`
-	In       string  `json:"in" yaml:"in"`
-	Required bool    `json:"required,omitempty" yaml:"required,omitempty"`
-	Schema   *Schema `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Name        string  `json:"name" yaml:"name"`
+	In          string  `json:"in" yaml:"in"`
+	Required    bool    `json:"required,omitempty" yaml:"required,omitempty"`
+	Schema      *Schema `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
 type RequestBodyObject struct {
 	Description string               `json:"description,omitempty" yaml:"description,omitempty"`
 	Required    bool                 `json:"required,omitempty" yaml:"required,omitempty"`
 	Content     map[string]MediaType `json:"content,omitempty" yaml:"content,omitempty"`
+}
+
+type HeaderObject struct {
+	Description string  `json:"description,omitempty" yaml:"description,omitempty"`
+	Schema      *Schema `json:"schema,omitempty" yaml:"schema,omitempty"`
 }

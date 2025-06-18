@@ -3,7 +3,7 @@ package generator
 import (
 	"strings"
 
-	"github.com/georgetjose/openapi3gen/internal/parser"
+	"github.com/georgetjose/openapi3gen/pkg/parser"
 )
 
 // GenerateSpec builds an OpenAPI struct from parsed RouteDoc list
@@ -32,9 +32,10 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 
 		for _, p := range route.Params {
 			parameters = append(parameters, &ParameterObject{
-				Name:     p.Name,
-				In:       p.In,
-				Required: p.Required,
+				Name:        p.Name,
+				In:          p.In,
+				Required:    p.Required,
+				Description: p.Description,
 				Schema: &Schema{
 					Type: p.Schema,
 				},
@@ -62,13 +63,31 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
 			if m, ok := registry.Get(r.Model); ok {
 				refSchema := addComponentSchema(r.Model, m, registry, openapi.Components)
 
+				// Collect all headers for this response
+				headers := make(map[string]*HeaderObject)
+				for _, h := range route.Headers {
+					if h.StatusCode == statusCode {
+						headers[h.Name] = &HeaderObject{
+							Description: h.Description,
+							Schema: &Schema{
+								Type: h.Type,
+							},
+						}
+					}
+				}
+
+				desc := r.Description
+				if desc == "" {
+					desc = "Success"
+				}
 				responses[statusCode] = &ResponseWrapper{
-					Description: "Success",
+					Description: desc,
 					Content: map[string]MediaType{
 						r.MediaType: {
 							Schema: refSchema,
 						},
 					},
+					Headers: headers,
 				}
 			}
 		}

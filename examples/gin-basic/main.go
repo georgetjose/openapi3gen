@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/georgetjose/openapi3gen/internal/generator"
-	"github.com/georgetjose/openapi3gen/internal/parser"
-	"github.com/georgetjose/openapi3gen/internal/ui"
+	"github.com/georgetjose/openapi3gen/pkg/generator"
+	"github.com/georgetjose/openapi3gen/pkg/parser"
+	"github.com/georgetjose/openapi3gen/pkg/ui"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,14 +19,27 @@ func HelloHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Hello, world!"})
 }
 
+// @Summary Legacy greeting
+// @Description This endpoint is deprecated
+// @Tags legacy
+// @Deprecated
+// @Success 200 {object} map[string]string
+// @Router /hello-legacy [get]
+func LegacyHello(c *gin.Context) {
+	c.JSON(200, gin.H{"message": "This is deprecated"})
+}
+
 // @Summary Get user by ID
 // @Description Returns user data based on ID
 // @Tags user
 // @Param id path string true "User ID"
-// @Success 200 {object} UserResponse
+// @Param X-Correlation-ID header string true "Tracking ID for the request"
+// @Success 200 {object} UserResponse "Returns the user object with id and name"
+// @Header 200 X-RateLimit-Remaining string true "Remaining quota"
 // @Router /user/{id} [get]
 func GetUserHandler(c *gin.Context) {
 	id := c.Param("id")
+	c.Header("X-RateLimit-Remaining", "29")
 	c.JSON(200, UserResponse{ID: id, Name: "George T Jose"})
 }
 
@@ -46,13 +59,13 @@ func CreateUserHandler(c *gin.Context) {
 }
 
 type CreateUserRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Name  string `json:"name" openapi:"desc=Full name of the user"`
+	Email string `json:"email" openapi:"desc=User's email address"`
 }
 
 type UserResponse struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID   string `json:"id" openapi:"desc=Unique user ID"`
+	Name string `json:"name" openapi:"desc=Full name of the user"`
 }
 
 func main() {
@@ -77,6 +90,8 @@ func main() {
 
 	// Routes
 	r.GET("/hello", HelloHandler)
+
+	r.GET("/hello-legacy", LegacyHello)
 
 	r.GET("/user/:id", GetUserHandler)
 
