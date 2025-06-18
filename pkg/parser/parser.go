@@ -10,10 +10,11 @@ import (
 )
 
 type Parameter struct {
-	Name     string
-	In       string // path, query, header, cookie
-	Required bool
-	Schema   string // string, integer, etc.
+	Name        string
+	In          string // path, query, header, cookie
+	Required    bool
+	Schema      string // string, integer, etc.
+	Description string
 }
 
 type RequestBody struct {
@@ -24,9 +25,18 @@ type RequestBody struct {
 }
 
 type Response struct {
-	Model      string
-	MediaType  string
-	StatusCode string
+	Model       string
+	MediaType   string
+	StatusCode  string
+	Description string
+}
+
+type Header struct {
+	StatusCode  string
+	Name        string
+	Type        string
+	Required    bool
+	Description string
 }
 
 type RouteDoc struct {
@@ -38,6 +48,8 @@ type RouteDoc struct {
 	Params      []Parameter
 	RequestBody *RequestBody
 	Responses   map[string]Response
+	Headers     []Header
+	Deprecated  bool
 }
 
 // ParseDirectory parses all .go files in a folder and extracts annotations
@@ -76,13 +88,19 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 				case strings.HasPrefix(text, "@Tags "):
 					doc.Tags = strings.Split(strings.TrimPrefix(text, "@Tags "), ",")
 				case strings.HasPrefix(text, "@Success "):
+					// Format: @Success 200 {object} ModelName "Description"
 					parts := strings.Fields(text[len("@Success "):])
 					if len(parts) >= 3 {
-						doc.Responses[parts[0]] = Response{
+						resp := Response{
 							StatusCode: parts[0],
 							MediaType:  "application/json",
 							Model:      parts[2],
 						}
+						if len(parts) > 3 {
+							resp.Description = strings.Join(parts[3:], " ")
+							resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+						}
+						doc.Responses[parts[0]] = resp
 					}
 				case strings.HasPrefix(text, "@Router "):
 					parts := strings.Fields(strings.TrimPrefix(text, "@Router "))
@@ -92,7 +110,7 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 					}
 				case strings.HasPrefix(text, "@Param "):
 					// Format: @Param name in type required "description"
-					// Example: @Param id path string true "ID of the user"
+					// Example: @Param X-Correlation-ID header string true "Tracking ID"
 					parts := strings.Fields(text[len("@Param "):])
 					if len(parts) >= 4 {
 						param := Parameter{
@@ -100,6 +118,10 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 							In:       parts[1],
 							Schema:   parts[2],
 							Required: parts[3] == "true",
+						}
+						if len(parts) > 4 {
+							param.Description = strings.Join(parts[4:], " ")
+							param.Description = strings.Trim(param.Description, `"`)
 						}
 						doc.Params = append(doc.Params, param)
 					}
@@ -114,6 +136,20 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 							MediaType:   "application/json",           // default for now
 						}
 					}
+				case strings.HasPrefix(text, "@Header "):
+					// Format: @Header 200 X-Header string true "Description"
+					parts := strings.Fields(text[len("@Header "):])
+					if len(parts) >= 5 {
+						doc.Headers = append(doc.Headers, Header{
+							StatusCode:  parts[0],
+							Name:        parts[1],
+							Type:        parts[2],
+							Required:    parts[3] == "true",
+							Description: strings.Join(parts[4:], " "),
+						})
+					}
+				case strings.EqualFold(text, "@Deprecated"):
+					doc.Deprecated = true
 				}
 			}
 

@@ -2,6 +2,7 @@ package generator
 
 import (
 	"reflect"
+	"strings"
 )
 
 func GenerateSchemaFromStruct(model any) *Schema {
@@ -29,8 +30,10 @@ func GenerateSchemaFromStruct(model any) *Schema {
 		// Remove ,omitempty etc.
 		jsonName = parseJSONName(jsonName)
 
+		desc := extractDescription(field.Tag.Get("openapi"))
 		prop := &Schema{
-			Type: mapGoTypeToOpenAPIType(field.Type.Kind()),
+			Type:        mapGoTypeToOpenAPIType(field.Type.Kind()),
+			Description: desc,
 		}
 
 		schema.Properties[jsonName] = prop
@@ -76,4 +79,13 @@ func mapGoTypeToOpenAPIType(kind reflect.Kind) string {
 	default:
 		return "string"
 	}
+}
+
+func extractDescription(tag string) string {
+	// Example tag: openapi:"desc=User's name"
+	parts := strings.Split(tag, "desc=")
+	if len(parts) == 2 {
+		return strings.Trim(parts[1], `"`)
+	}
+	return ""
 }
