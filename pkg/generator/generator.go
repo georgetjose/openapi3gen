@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/georgetjose/openapi3gen/pkg/parser"
@@ -12,8 +13,8 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 	openapi := &OpenAPI{
 		OpenAPI: "3.0.0",
 		Info: Info{
-			Title:   globalMetaData.GlobalTitle,
-			Version: globalMetaData.GlobalVersion,
+			Title:       globalMetaData.GlobalTitle,
+			Version:     globalMetaData.GlobalVersion,
 			Description: globalMetaData.GlobalDescription,
 		},
 		Paths: make(map[string]*PathItem),
@@ -72,6 +73,8 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 						},
 					},
 				}
+			} else {
+				log.Printf("Model not found in registry: %s\n", route.RequestBody.Model)
 			}
 		}
 

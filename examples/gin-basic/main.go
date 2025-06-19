@@ -12,12 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary Greet user
-// @Description Returns a friendly greeting message
-// @Tags hello
-// @Param name query string true "Name of the user"
-// @Success 200 {object} map[string]string
-// @Router /hello [get]
 func HelloHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Hello, world!"})
 }
@@ -79,6 +73,19 @@ func CreateUserHandler(c *gin.Context) {
 	c.JSON(201, UserResponse{ID: "123", Name: req.Name})
 }
 
+// @Summary Create a user Auto Detect
+// @Description Creates a new user
+// @Tags user
+// @Router /usersauto [post]
+func CreateUserHandlerAutoDetect(c *gin.Context) {
+	var req CreateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(201, UserResponse{ID: "123", Name: req.Name})
+}
+
 type CreateUserRequest struct {
 	Name  string `json:"name" openapi:"desc=Full name of the user"`
 	Email string `json:"email" openapi:"desc=User's email address"`
@@ -93,7 +100,7 @@ func main() {
 	r := gin.Default()
 
 	// Parse annotations
-	routes, err := parser.ParseDirectory("./examples/gin-basic")
+	routes, err := parser.ParseDirectory("./")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -102,7 +109,7 @@ func main() {
 	registry.Register("CreateUserRequest", CreateUserRequest{})
 	registry.Register("UserResponse", UserResponse{})
 
-	globalMetaData := parser.ParseGlobalMetadata("./examples/gin-basic/main.go")
+	globalMetaData := parser.ParseGlobalMetadata("main.go")
 	// Generate OpenAPI spec
 	openapi := generator.GenerateSpec(routes, registry, globalMetaData)
 
@@ -120,6 +127,8 @@ func main() {
 	r.GET("/user/search", SearchUserHandler)
 
 	r.POST("/users", CreateUserHandler)
+
+	r.POST("/usersauto", CreateUserHandlerAutoDetect)
 
 	r.Run(":8080")
 }

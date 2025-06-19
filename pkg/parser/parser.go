@@ -184,6 +184,34 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 			}
 
 			if doc.Path != "" && doc.Method != "" {
+				// Inject inferred request body if missing and ShouldBindJSON is used
+				if doc.RequestBody == nil {
+					modelMap, err := DetectRequestBodyType(fn)
+					if err == nil && len(modelMap) > 0 {
+						for structName := range modelMap {
+							doc.RequestBody = &RequestBody{
+								Model:       structName,
+								Required:    true,
+								Description: "Auto-detected request body",
+								MediaType:   "application/json",
+							}
+							break
+						}
+					}
+				}
+
+				// Inject inferred response models if none are defined via annotations
+				if len(doc.Responses) == 0 {
+					inferred := DetectResponseModel(fn)
+					for status, model := range inferred {
+						doc.Responses[status] = Response{
+							StatusCode:  status,
+							MediaType:   "application/json",
+							Model:       model,
+							Description: "Auto-detected response model",
+						}
+					}
+				}
 				routes = append(routes, doc)
 			}
 		}
