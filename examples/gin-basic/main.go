@@ -1,3 +1,6 @@
+// @GlobalTitle My Service API
+// @GlobalVersion 1.0.0
+// @GlobalDescription This is a sample API for demonstrating OpenAPI generation with Gin and annotations.
 package main
 
 import (
@@ -99,8 +102,9 @@ func main() {
 	registry.Register("CreateUserRequest", CreateUserRequest{})
 	registry.Register("UserResponse", UserResponse{})
 
+	globalMetaData := parser.ParseGlobalMetadata("./examples/gin-basic/main.go")
 	// Generate OpenAPI spec
-	openapi := generator.GenerateSpec(routes, registry)
+	openapi := generator.GenerateSpec(routes, registry, globalMetaData)
 
 	// Serve OpenAPI dynamically
 	ui.RegisterSwaggerUI(r, "")

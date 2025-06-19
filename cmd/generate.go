@@ -38,7 +38,8 @@ var generateCmd = &cobra.Command{
 		// TODO: optionally support JSON schema registry discovery later
 
 		// 3. Generate spec
-		spec := generator.GenerateSpec(routes, registry)
+		metadata := parser.ParseGlobalMetadata(filepath.Join(dir, "main.go"))
+		spec := generator.GenerateSpec(routes, registry, metadata)
 
 		// 4. Write to output
 		specJson, err := json.MarshalIndent(spec, "", "  ")

@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+type GlobalMetadata struct {
+	GlobalTitle       string
+	GlobalVersion     string
+	GlobalDescription string
+}
+
 type Parameter struct {
 	Name        string
 	In          string // path, query, header, cookie
@@ -50,6 +56,30 @@ type RouteDoc struct {
 	Responses   map[string]Response
 	Headers     []Header
 	Deprecated  bool
+}
+
+func ParseGlobalMetadata(filePath string) GlobalMetadata {
+	src, _ := os.ReadFile(filePath)
+	lines := strings.Split(string(src), "\n")
+
+	metadata := GlobalMetadata{}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		if strings.HasPrefix(line, "// @GlobalTitle ") {
+			metadata.GlobalTitle = strings.TrimSpace(strings.TrimPrefix(line, "// @GlobalTitle "))
+		}
+		if strings.HasPrefix(line, "// @GlobalVersion ") {
+			metadata.GlobalVersion = strings.TrimSpace(strings.TrimPrefix(line, "// @GlobalVersion "))
+		}
+		if strings.HasPrefix(line, "// @GlobalDescription ") {
+			metadata.GlobalDescription = strings.TrimSpace(strings.TrimPrefix(line, "// @GlobalDescription "))
+		}
+		if strings.HasPrefix(line, "package ") {
+			break // Stop after reaching package line
+		}
+	}
+	return metadata
 }
 
 // ParseDirectory parses all .go files in a folder and extracts annotations

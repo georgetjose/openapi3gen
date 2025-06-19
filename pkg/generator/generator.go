@@ -8,12 +8,13 @@ import (
 )
 
 // GenerateSpec builds an OpenAPI struct from parsed RouteDoc list
-func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry) *OpenAPI {
+func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaData parser.GlobalMetadata) *OpenAPI {
 	openapi := &OpenAPI{
 		OpenAPI: "3.0.0",
 		Info: Info{
-			Title:   "Generated API",
-			Version: "1.0.0",
+			Title:   globalMetaData.GlobalTitle,
+			Version: globalMetaData.GlobalVersion,
+			Description: globalMetaData.GlobalDescription,
 		},
 		Paths: make(map[string]*PathItem),
 	}
