@@ -132,6 +132,21 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 						}
 						doc.Responses[parts[0]] = resp
 					}
+				case strings.HasPrefix(text, "@Failure "):
+					// Format: @Failure 400 {object} ErrorModel "Description"
+					parts := strings.Fields(text[len("@Failure "):])
+					if len(parts) >= 3 {
+						resp := Response{
+							StatusCode: parts[0],
+							MediaType:  "application/json",
+							Model:      parts[2],
+						}
+						if len(parts) > 3 {
+							resp.Description = strings.Join(parts[3:], " ")
+							resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+						}
+						doc.Responses[parts[0]] = resp
+					}
 				case strings.HasPrefix(text, "@Router "):
 					parts := strings.Fields(strings.TrimPrefix(text, "@Router "))
 					if len(parts) == 2 {

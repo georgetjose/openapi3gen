@@ -12,7 +12,7 @@
 - 📌 Generates `openapi.json` from handler annotations
 - 🔍 Path, query, and header param support via `@Param`
 - 📦 Request body model via `@RequestBody`
-- 🧾 Response models with `$ref` and `@Success`
+- 🧾 Response models with `$ref`, `@Success` and `@Failure`
 - 📤 Response headers with `@Header`
 - 🧪 Auto schema generation from Go structs
 - 🏷 Tag-based grouping, descriptions, and `@Deprecated`
@@ -38,12 +38,14 @@ Step 1: Annotate your handlers
 // @Tags user
 // @Param id path string true "User ID"
 // @Success 200 {object} UserResponse
+// @Failure 400 {object} ErrorResponse
 // @Header 200 X-RateLimit-Remaining string true "Remaining quota"
 // @Router /user/{id} [get]
 func GetUserByIDHandler(c *gin.Context) {
 	id := c.Param("id")
 	c.Header("X-RateLimit-Remaining", "29")
 	c.JSON(200, UserResponse{ID: id, Name: "John Doe"})
+	c.JSON(400, ErrorResponse{Message: err.Error()})
 }
 ```
 
@@ -66,16 +68,20 @@ Access at: http://localhost:8080/swagger
 ---
 
 ## 🗂️ Annotation Cheatsheet
-| Annotation     | Purpose                                 |
-| -------------- | --------------------------------------- |
-| `@Summary`     | One-line summary                        |
-| `@Description` | Detailed endpoint explanation           |
-| `@Tags`        | Group endpoints                         |
-| `@Param`       | Parameters in `path`, `query`, `header` |
-| `@RequestBody` | JSON body payload with struct           |
-| `@Success`     | Response code and return object         |
-| `@Header`      | Adds response header details            |
-| `@Deprecated`  | Flags the route as deprecated in spec   |
+| Annotation          | Purpose                                 |
+| ------------------- | --------------------------------------- |
+| `@GlobalTitle`  	  | Title for the about the APIs/Service    |
+| `@GlobalVersion`    | Version of the swagger doc              |
+| `@GlobalDescription`| Detailed explanation about APIs/Service |
+| `@Summary`          | One-line summary                        |
+| `@Description`      | Detailed endpoint explanation           |
+| `@Tags`             | Group endpoints                         |
+| `@Param`            | Parameters in `path`, `query`, `header` |
+| `@RequestBody`      | JSON body payload with struct           |
+| `@Success`          | Success Response code and return object |
+| `@Failure`          | Failure Response code and return object |
+| `@Header`           | Adds response header details            |
+| `@Deprecated`       | Flags the route as deprecated in spec   |
 
 ---
 
@@ -100,6 +106,10 @@ go build -o openapi3gen main.go
 - ✅  Swagger UI
 
 - ✅  CLI for static spec generation
+
+- ✅  Auto Detection of Path, Query & Header parameter
+
+- ✅  Auto Detection of Header
 
 - ⌛ Security schemes (@Security)
 

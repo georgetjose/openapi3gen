@@ -98,9 +98,10 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 
 				desc := r.Description
 				if desc == "" {
-					desc = "Success"
+					desc = "Response"
 				}
 
+				// Add the response to the map without overwriting existing entries
 				responses[statusCode] = &ResponseWrapper{
 					Description: desc,
 					Content: map[string]MediaType{

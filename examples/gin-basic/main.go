@@ -68,11 +68,12 @@ func SearchUserHandler(c *gin.Context) {
 // @Tags user
 // @RequestBody {object} CreateUserRequest true "User payload"
 // @Success 201 {object} UserResponse
+// @Failure 400 {object} ErrorResponse "Invalid request payload"
 // @Router /users [post]
 func CreateUserHandler(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, ErrorResponse{Message: err.Error()})
 		return
 	}
 	c.JSON(201, UserResponse{ID: "123", Name: req.Name})
@@ -85,7 +86,7 @@ func CreateUserHandler(c *gin.Context) {
 func CreateUserHandlerAutoDetect(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.JSON(400, ErrorResponse{Message: err.Error()})
 		return
 	}
 	c.JSON(201, UserResponse{ID: "123", Name: req.Name})
@@ -116,6 +117,10 @@ type UserResponse struct {
 	Name string `json:"name" openapi:"desc=Full name of the user"`
 }
 
+type ErrorResponse struct {
+	Message string `json:"message" openapi:"desc=Error message"`
+}
+
 func main() {
 	r := gin.Default()
 
@@ -128,6 +133,7 @@ func main() {
 	registry := generator.NewModelRegistry()
 	registry.Register("CreateUserRequest", CreateUserRequest{})
 	registry.Register("UserResponse", UserResponse{})
+	registry.Register("ErrorResponse", ErrorResponse{})
 
 	globalMetaData := parser.ParseGlobalMetadata("main.go")
 	// Generate OpenAPI spec
