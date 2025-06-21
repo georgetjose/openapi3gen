@@ -20,7 +20,22 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 		Paths: make(map[string]*PathItem),
 	}
 	openapi.Components = &Components{
-		Schemas: make(map[string]*Schema),
+		Schemas:         make(map[string]*Schema),
+		SecuritySchemes: make(map[string]*SecuritySchemeObject),
+	}
+
+	usedSecurity := make(map[string]bool)
+	for _, route := range routes {
+		for _, sec := range route.SecuritySchemes {
+			if !usedSecurity[sec] {
+				openapi.Components.SecuritySchemes[sec] = &SecuritySchemeObject{
+					Type:         "http",
+					Scheme:       "bearer",
+					BearerFormat: "JWT",
+				}
+				usedSecurity[sec] = true
+			}
+		}
 	}
 
 	for _, route := range routes {
@@ -62,7 +77,7 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 
 		if route.RequestBody != nil {
 			if m, ok := registry.Get(route.RequestBody.Model); ok {
-				refSchema := addComponentSchema(route.RequestBody.Model, m, registry, openapi.Components)
+				refSchema := addComponentSchema(route.RequestBody.Model, m, openapi.Components)
 
 				requestBody = &RequestBodyObject{
 					Description: route.RequestBody.Description,
@@ -81,7 +96,7 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 		responses := make(map[string]*ResponseWrapper)
 		for statusCode, r := range route.Responses {
 			if m, ok := registry.Get(r.Model); ok {
-				refSchema := addComponentSchema(r.Model, m, registry, openapi.Components)
+				refSchema := addComponentSchema(r.Model, m, openapi.Components)
 
 				// Collect response headers
 				headers := make(map[string]*HeaderObject)
@@ -130,6 +145,14 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 			Responses:   responses,
 		}
 
+		var security []map[string][]string
+		for _, secName := range route.SecuritySchemes {
+			security = append(security, map[string][]string{
+				secName: {},
+			})
+		}
+		op.Security = security
+
 		if route.Deprecated {
 			op.Deprecated = true
 		}
@@ -149,7 +172,7 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 	return openapi
 }
 
-func addComponentSchema(modelName string, model any, registry *ModelRegistry, components *Components) *Schema {
+func addComponentSchema(modelName string, model any, components *Components) *Schema {
 	// If already registered, return $ref
 	if _, exists := components.Schemas[modelName]; exists {
 		return &Schema{

@@ -69,6 +69,7 @@ func SearchUserHandler(c *gin.Context) {
 // @RequestBody {object} CreateUserRequest true "User payload"
 // @Success 201 {object} UserResponse
 // @Failure 400 {object} ErrorResponse "Invalid request payload"
+// @Security BearerAuth
 // @Router /users [post]
 func CreateUserHandler(c *gin.Context) {
 	var req CreateUserRequest

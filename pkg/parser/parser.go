@@ -46,16 +46,17 @@ type Header struct {
 }
 
 type RouteDoc struct {
-	Summary     string
-	Description string
-	Method      string
-	Path        string
-	Tags        []string
-	Params      []Parameter
-	RequestBody *RequestBody
-	Responses   map[string]Response
-	Headers     []Header
-	Deprecated  bool
+	Summary         string
+	Description     string
+	Method          string
+	Path            string
+	Tags            []string
+	Params          []Parameter
+	RequestBody     *RequestBody
+	Responses       map[string]Response
+	Headers         []Header
+	SecuritySchemes []string
+	Deprecated      bool
 }
 
 func ParseGlobalMetadata(filePath string) GlobalMetadata {
@@ -193,6 +194,9 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 							Description: strings.Join(parts[4:], " "),
 						})
 					}
+				case strings.HasPrefix(text, "@Security "):
+					doc.SecuritySchemes = append(doc.SecuritySchemes,
+						strings.TrimSpace(strings.TrimPrefix(text, "@Security ")))
 				case strings.EqualFold(text, "@Deprecated"):
 					doc.Deprecated = true
 				}

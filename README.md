@@ -14,6 +14,7 @@
 - 📦 Request body model via `@RequestBody`
 - 🧾 Response models with `$ref`, `@Success` and `@Failure`
 - 📤 Response headers with `@Header`
+- 🔐 Authorization headers with `@Security`
 - 🧪 Auto schema generation from Go structs
 - 🏷 Tag-based grouping, descriptions, and `@Deprecated`
 - ⚙️ CLI support: `openapi3gen generate`
@@ -40,6 +41,7 @@ Step 1: Annotate your handlers
 // @Success 200 {object} UserResponse
 // @Failure 400 {object} ErrorResponse
 // @Header 200 X-RateLimit-Remaining string true "Remaining quota"
+// @Security BearerAuth
 // @Router /user/{id} [get]
 func GetUserByIDHandler(c *gin.Context) {
 	id := c.Param("id")
@@ -81,6 +83,7 @@ Access at: http://localhost:8080/swagger
 | `@Success`          | Success Response code and return object |
 | `@Failure`          | Failure Response code and return object |
 | `@Header`           | Adds response header details            |
+| `@Security`         | Adds authorization to endpoints         |
 | `@Deprecated`       | Flags the route as deprecated in spec   |
 
 ---
@@ -109,9 +112,13 @@ go build -o openapi3gen main.go
 
 - ✅  Auto Detection of Path, Query & Header parameter
 
+- ✅  Auto Detection of Request Body
+
 - ✅  Auto Detection of Header
 
-- ⌛ Security schemes (@Security)
+- ✅  Auto Detection of Response Body
+
+- ✅  Support for Security schemes
 
 - ⌛ Support enums, examples
 

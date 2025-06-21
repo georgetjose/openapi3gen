@@ -9,8 +9,9 @@ type Schema struct {
 }
 
 type Components struct {
-	Schemas map[string]*Schema `json:"schemas,omitempty" yaml:"schemas,omitempty"`
-	Ref     string             `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	Schemas         map[string]*Schema               `json:"schemas,omitempty" yaml:"schemas,omitempty"`
+	Ref             string                           `json:"$ref,omitempty" yaml:"$ref,omitempty"`
+	SecuritySchemes map[string]*SecuritySchemeObject `json:"securitySchemes,omitempty"`
 }
 
 type OpenAPI struct {
@@ -33,6 +34,12 @@ type PathItem struct {
 	Delete *Operation `json:"delete,omitempty" yaml:"delete,omitempty"`
 }
 
+type SecuritySchemeObject struct {
+	Type         string `json:"type"`
+	Scheme       string `json:"scheme,omitempty"`
+	BearerFormat string `json:"bearerFormat,omitempty"`
+}
+
 type Operation struct {
 	Summary     string                      `json:"summary,omitempty" yaml:"summary,omitempty"`
 	Description string                      `json:"description,omitempty" yaml:"description,omitempty"`
@@ -40,6 +47,7 @@ type Operation struct {
 	Responses   map[string]*ResponseWrapper `json:"responses,omitempty" yaml:"responses,omitempty"`
 	Parameters  []*ParameterObject          `json:"parameters,omitempty" yaml:"parameters,omitempty"`
 	RequestBody *RequestBodyObject          `json:"requestBody,omitempty" yaml:"requestBody,omitempty"`
+	Security    []map[string][]string       `json:"security,omitempty"`
 	Deprecated  bool                        `json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 }
 
