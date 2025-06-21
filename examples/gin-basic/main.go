@@ -12,13 +12,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Hello greeting
+// @Description This endpoint is a sample.
+// @Tags hello
+// @Success 200 {object} map[string]string
+// @Router /hello [get]
 func HelloHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Hello, world!"})
 }
 
 // @Summary Legacy greeting
 // @Description This endpoint is deprecated
-// @Tags legacy
+// @Tags hello
 // @Deprecated
 // @Success 200 {object} map[string]string
 // @Router /hello-legacy [get]
@@ -86,6 +91,21 @@ func CreateUserHandlerAutoDetect(c *gin.Context) {
 	c.JSON(201, UserResponse{ID: "123", Name: req.Name})
 }
 
+// @Summary Search user by name
+// @Description Returns user data based on query param
+// @Tags user
+// @Router /user/searchauto [get]
+func SearchUserHandlerAuto(c *gin.Context) {
+	name := c.Query("name")
+	correlationID := c.GetHeader("X-Correlation-ID")
+
+	c.Header("X-RateLimit-Remaining", "28")
+	c.JSON(200, UserResponse{
+		ID:   correlationID,
+		Name: name,
+	})
+}
+
 type CreateUserRequest struct {
 	Name  string `json:"name" openapi:"desc=Full name of the user"`
 	Email string `json:"email" openapi:"desc=User's email address"`
@@ -129,6 +149,8 @@ func main() {
 	r.POST("/users", CreateUserHandler)
 
 	r.POST("/usersauto", CreateUserHandlerAutoDetect)
+
+	r.GET("/user/searchauto", SearchUserHandlerAuto)
 
 	r.Run(":8080")
 }

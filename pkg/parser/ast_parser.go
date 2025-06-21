@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"strings"
 )
 
@@ -85,4 +86,126 @@ func DetectResponseModel(fn *ast.FuncDecl) map[string]string {
 	})
 
 	return responses
+}
+
+func DetectParametersAndQuery(fn *ast.FuncDecl) ([]Parameter, error) {
+	var parameters []Parameter
+
+	// Ensure the function has a body
+	if fn.Body == nil {
+		return nil, fmt.Errorf("function body is nil")
+	}
+
+	// Inspect the function body to find parameter and query accesses
+	ast.Inspect(fn.Body, func(n ast.Node) bool {
+		// Check for call expressions
+		callExpr, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		// Check if the function being called is a Gin context method
+		selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+
+		// Detect path parameters (e.g., c.Param("id"))
+		if selExpr.Sel.Name == "Param" && len(callExpr.Args) == 1 {
+			arg, ok := callExpr.Args[0].(*ast.BasicLit)
+			if ok && arg.Kind == token.STRING {
+				paramName := strings.Trim(arg.Value, "\"")
+				parameters = append(parameters, Parameter{
+					Name:        paramName,
+					In:          "path",
+					Required:    true,
+					Schema:      "string",
+					Description: fmt.Sprintf("Path parameter '%s'", paramName),
+				})
+			}
+		}
+
+		// Detect query parameters (e.g., c.Query("name"))
+		if selExpr.Sel.Name == "Query" && len(callExpr.Args) == 1 {
+			arg, ok := callExpr.Args[0].(*ast.BasicLit)
+			if ok && arg.Kind == token.STRING {
+				queryName := strings.Trim(arg.Value, "\"")
+				parameters = append(parameters, Parameter{
+					Name:        queryName,
+					In:          "query",
+					Required:    false,
+					Schema:      "string",
+					Description: fmt.Sprintf("Query parameter '%s'", queryName),
+				})
+			}
+		}
+
+		// Detect headers (e.g., c.GetHeader("X-Correlation-ID"))
+		if selExpr.Sel.Name == "GetHeader" && len(callExpr.Args) == 1 {
+			arg, ok := callExpr.Args[0].(*ast.BasicLit)
+			if ok && arg.Kind == token.STRING {
+				headerName := strings.Trim(arg.Value, "\"")
+				parameters = append(parameters, Parameter{
+					Name:        headerName,
+					In:          "header",
+					Required:    false,
+					Schema:      "string",
+					Description: fmt.Sprintf("Header '%s'", headerName),
+				})
+			}
+		}
+
+		return true
+	})
+
+	if len(parameters) > 0 {
+		return parameters, nil
+	}
+	return nil, fmt.Errorf("no parameters or query strings found")
+}
+
+func DetectHeaders(fn *ast.FuncDecl) ([]Header, error) {
+	var headers []Header
+
+	// Ensure the function has a body
+	if fn.Body == nil {
+		return nil, fmt.Errorf("function body is nil")
+	}
+
+	// Inspect the function body to find header accesses
+	ast.Inspect(fn.Body, func(n ast.Node) bool {
+		// Check for call expressions
+		callExpr, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		// Check if the function being called is c.Header
+		selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+		if !ok || selExpr.Sel.Name != "Header" {
+			return true
+		}
+
+		// Extract the header name
+		if len(callExpr.Args) == 2 {
+			arg, ok := callExpr.Args[0].(*ast.BasicLit)
+			if ok && arg.Kind == token.STRING {
+				headerName := strings.Trim(arg.Value, "\"")
+				headers = append(headers, Header{
+					StatusCode:  "200",
+					Name:        headerName,
+					Type:        "string",
+					Required:    true,
+					Description: fmt.Sprintf("Header '%s'", headerName),
+				})
+			}
+		}
+
+		return true
+	})
+
+	if len(headers) > 0 {
+		return headers, nil
+	}
+	return nil, fmt.Errorf("no headers found")
 }

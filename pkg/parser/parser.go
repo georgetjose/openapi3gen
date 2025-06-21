@@ -183,6 +183,20 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 				}
 			}
 
+			if len(doc.Headers) == 0 {
+				headers, err := DetectHeaders(fn)
+				if err == nil && len(headers) > 0 {
+					doc.Headers = append(doc.Headers, headers...)
+				}
+			}
+
+			if len(doc.Params) == 0 {
+				parameters, err := DetectParametersAndQuery(fn)
+				if err == nil && len(parameters) > 0 {
+					doc.Params = append(doc.Params, parameters...)
+				}
+			}
+
 			if doc.Path != "" && doc.Method != "" {
 				// Inject inferred request body if missing and ShouldBindJSON is used
 				if doc.RequestBody == nil {
