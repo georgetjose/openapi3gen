@@ -1,0 +1,76 @@
+# OpenAPI Annotation Guide for Gin Handlers
+
+## Purpose
+This guide instructs AI models on how to automatically add OpenAPI 3.0 annotations above Gin handler functions in Go source files for the openapi3gen project.
+
+## Annotation Format
+Annotations are single-line comments starting with `// @` placed immediately above the handler function definition.
+
+## Supported Annotations
+
+- `@Summary <short summary>`
+- `@Description <detailed description>`
+- `@Tags <comma-separated tags>`
+- `@Param <name> <in> <type> <required> "<description>"`
+  - `<in>`: path, query, header, cookie
+  - `<type>`: string, integer, boolean, etc.
+  - `<required>`: true or false
+- `@RequestBody {object} <ModelName> <required> "<description>"`
+- `@Success <status_code> {object} <ModelName> "<description>"`
+- `@Header <status_code> <name> <type> <required> "<description>"`
+- `@Router <path> [<method>]`
+- `@Deprecated` (if the endpoint is deprecated)
+
+## Handler Detection
+A handler is a function with signature: `func HandlerName(c *gin.Context) { ... }`
+
+## Annotation Placement
+- Place all relevant annotations directly above the handler function.
+- If the handler uses path/query/header parameters, add `@Param` for each.
+- If the handler binds a request body (e.g., via `ShouldBindJSON`), add `@RequestBody`.
+- If the handler returns a response object, add `@Success`.
+- If the handler sets response headers, add `@Header`.
+- Always add `@Router` with the route path and HTTP method.
+
+## Example
+
+```go
+// @Summary Get user by ID
+// @Description Returns user data based on ID
+// @Tags user
+// @Param id path string true "User ID"
+// @Success 200 {object} UserResponse "Returns the user object with id and name"
+// @Header 200 X-RateLimit-Remaining string true "Remaining quota"
+// @Router /user/{id} [get]
+func GetUserByIDHandler(c *gin.Context) {
+    // handler code
+}
+```
+
+## Global Metadata
+For the main package file, add global metadata annotations at the top:
+
+- `@GlobalTitle <API Title>`
+- `@GlobalVersion <API Version>`
+- `@GlobalDescription <API Description>`
+
+Example:
+```go
+// @GlobalTitle My Service API
+// @GlobalVersion 1.0.0
+// @GlobalDescription This is a sample API for demonstrating OpenAPI generation.
+package main
+```
+
+## Notes
+- Use the parameter names and types as defined in the handler signature and struct definitions.
+- For request/response models, use the struct type names.
+- If a handler is deprecated, add `@Deprecated`.
+- Ensure all annotations are syntactically correct and match the handler logic.
+
+## Reference
+See [examples/gin-basic/main.go](examples/gin-basic/main.go) for real annotation usage.
+
+---
+
+End of Guide
