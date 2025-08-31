@@ -63,10 +63,27 @@ package main
 ```
 
 ## Notes
-- Use the parameter names and types as defined in the handler signature and struct definitions.
-- For request/response models, use the struct type names.
-- If a handler is deprecated, add `@Deprecated`.
-- Ensure all annotations are syntactically correct and match the handler logic.
+
+## Model Registration Instructions
+For every model referenced in `@RequestBody`, `@Success`, and `@Failure` annotations, ensure the model is registered using the following pattern in your main function or initialization code:
+
+```go
+registry.Register("ModelName", ModelType{})
+```
+
+Where:
+- `ModelName` is the string name used in the annotation (e.g., `CreateUserRequest`, `UserResponse`, `ErrorResponse`).
+- `ModelType` is the Go struct type.
+
+Example:
+```go
+registry.Register("CreateUserRequest", CreateUserRequest{})
+registry.Register("UserResponse", UserResponse{})
+registry.Register("ErrorResponse", ErrorResponse{})
+registry.Register("Description", Description{})
+```
+
+This ensures the OpenAPI generator can resolve and document the models referenced in your annotations.
 
 ## Reference
 See [examples/gin-basic/main.go](examples/gin-basic/main.go) for real annotation usage.

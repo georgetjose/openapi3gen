@@ -109,13 +109,25 @@ func SearchUserHandlerAuto(c *gin.Context) {
 }
 
 type CreateUserRequest struct {
-	Name  string `json:"name" openapi:"desc=Full name of the user"`
-	Email string `json:"email" openapi:"desc=User's email address"`
+	Name    string  `json:"name" openapi:"desc=Full name of the user"`
+	Email   string  `json:"email" openapi:"desc=User's email address"`
+	Address Address `json:"address" openapi:"desc=User's address"`
+}
+
+type Address struct {
+	State   string `json:"state" openapi:"desc=State"`
+	ZipCode int    `json:"zip_code" openapi:"desc=ZIP code"`
 }
 
 type UserResponse struct {
-	ID   string `json:"id" openapi:"desc=Unique user ID"`
-	Name string `json:"name" openapi:"desc=Full name of the user"`
+	ID          string      `json:"id" openapi:"desc=Unique user ID"`
+	Name        string      `json:"name" openapi:"desc=Full name of the user"`
+	Description Description `json:"description" openapi:"desc=User description"`
+}
+
+type Description struct {
+	Status  string `json:"status" openapi:"desc=User status"`
+	Message string `json:"message" openapi:"desc=User's message"`
 }
 
 type ErrorResponse struct {
@@ -135,6 +147,7 @@ func main() {
 	registry.Register("CreateUserRequest", CreateUserRequest{})
 	registry.Register("UserResponse", UserResponse{})
 	registry.Register("ErrorResponse", ErrorResponse{})
+	registry.Register("Description", Description{})
 
 	globalMetaData := parser.ParseGlobalMetadata("main.go")
 	// Generate OpenAPI spec

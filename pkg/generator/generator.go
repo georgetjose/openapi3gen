@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 
 	"github.com/georgetjose/openapi3gen/pkg/parser"
@@ -183,7 +184,47 @@ func addComponentSchema(modelName string, model any, components *Components) *Sc
 	schema := GenerateSchemaFromStruct(model)
 	components.Schemas[modelName] = schema
 
+	// Recursively register nested struct schemas
+	registerNestedSchemas(model, components)
+
 	return &Schema{
 		Ref: "#/components/schemas/" + modelName,
+	}
+}
+
+// registerNestedSchemas recursively registers schemas for nested structs
+func registerNestedSchemas(model any, components *Components) {
+	t := reflect.TypeOf(model)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	if t.Kind() != reflect.Struct {
+		return
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		fieldType := field.Type
+
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+
+		// If it's a custom struct, register it
+		if fieldType.Kind() == reflect.Struct && isCustomStruct(fieldType) {
+			schemaName := fieldType.Name()
+
+			// If not already registered, register it
+			if _, exists := components.Schemas[schemaName]; !exists {
+				// Create an instance of the struct to generate schema
+				structValue := reflect.New(fieldType).Interface()
+				schema := GenerateSchemaFromStruct(structValue)
+				components.Schemas[schemaName] = schema
+
+				// Recursively register nested structs
+				registerNestedSchemas(structValue, components)
+			}
+		}
 	}
 }

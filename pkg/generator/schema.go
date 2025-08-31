@@ -31,9 +31,24 @@ func GenerateSchemaFromStruct(model any) *Schema {
 		jsonName = parseJSONName(jsonName)
 
 		desc := extractDescription(field.Tag.Get("openapi"))
-		prop := &Schema{
-			Type:        mapGoTypeToOpenAPIType(field.Type.Kind()),
-			Description: desc,
+
+		// Handle nested struct types
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+
+		var prop *Schema
+		if fieldType.Kind() == reflect.Struct && isCustomStruct(fieldType) {
+			// Create a reference to the nested struct
+			prop = &Schema{
+				Ref: "#/components/schemas/" + fieldType.Name(),
+			}
+		} else {
+			prop = &Schema{
+				Type:        mapGoTypeToOpenAPIType(field.Type.Kind()),
+				Description: desc,
+			}
 		}
 
 		schema.Properties[jsonName] = prop
@@ -88,4 +103,20 @@ func extractDescription(tag string) string {
 		return strings.Trim(parts[1], `"`)
 	}
 	return ""
+}
+
+// isCustomStruct checks if the type is a custom struct (not a built-in type)
+func isCustomStruct(t reflect.Type) bool {
+	// Check if it's a struct and not from standard library
+	if t.Kind() != reflect.Struct {
+		return false
+	}
+
+	// Exclude time.Time and other common standard library structs
+	pkgPath := t.PkgPath()
+	if pkgPath == "" || strings.HasPrefix(pkgPath, "time") {
+		return false
+	}
+
+	return true
 }
