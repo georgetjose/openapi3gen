@@ -96,38 +96,45 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 
 		responses := make(map[string]*ResponseWrapper)
 		for statusCode, r := range route.Responses {
-			if m, ok := registry.Get(r.Model); ok {
-				refSchema := addComponentSchema(r.Model, m, openapi.Components)
-
-				// Collect response headers
-				headers := make(map[string]*HeaderObject)
-				for _, h := range route.Headers {
-					if h.StatusCode == statusCode {
-						headers[h.Name] = &HeaderObject{
-							Description: h.Description,
-							Schema: &Schema{
-								Type: h.Type,
-							},
-						}
+			// Collect response headers
+			headers := make(map[string]*HeaderObject)
+			for _, h := range route.Headers {
+				if h.StatusCode == statusCode {
+					headers[h.Name] = &HeaderObject{
+						Description: h.Description,
+						Schema: &Schema{
+							Type: h.Type,
+						},
 					}
 				}
+			}
 
-				desc := r.Description
-				if desc == "" {
-					desc = "Response"
-				}
+			desc := r.Description
+			if desc == "" {
+				desc = "Response"
+			}
 
-				// Add the response to the map without overwriting existing entries
-				responses[statusCode] = &ResponseWrapper{
-					Description: desc,
-					Content: map[string]MediaType{
+			response := &ResponseWrapper{
+				Description: desc,
+				Headers:     headers,
+			}
+
+			// Only add content if there's a model
+			if r.Model != "" {
+				if m, ok := registry.Get(r.Model); ok {
+					refSchema := addComponentSchema(r.Model, m, openapi.Components)
+					response.Content = map[string]MediaType{
 						r.MediaType: {
 							Schema: refSchema,
 						},
-					},
-					Headers: headers,
+					}
+				} else {
+					log.Printf("Model not found in registry: %s\n", r.Model)
+					continue // Skip this response if model not found
 				}
 			}
+
+			responses[statusCode] = response
 		}
 
 		// Ensure at least 1 response

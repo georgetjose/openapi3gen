@@ -15,7 +15,9 @@ import (
 // @Summary Hello greeting
 // @Description This endpoint is a sample.
 // @Tags hello
-// @Success 200 {object} map[string]string
+// @Success 200 "Success"
+// @Failure 400 {object} ErrorResponse "Invalid request payload"
+// @Failure 401 "Unauthorized"
 // @Router /hello [get]
 func HelloHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Hello, world!"})
@@ -25,7 +27,7 @@ func HelloHandler(c *gin.Context) {
 // @Description This endpoint is deprecated
 // @Tags hello
 // @Deprecated
-// @Success 200 {object} map[string]string
+// @Success 200 "Legacy greeting response"
 // @Router /hello-legacy [get]
 func LegacyHello(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "This is deprecated"})
@@ -134,6 +136,10 @@ type ErrorResponse struct {
 	Message string `json:"message" openapi:"desc=Error message"`
 }
 
+type HelloResponse struct {
+	Message string `json:"message" openapi:"desc=Hello message"`
+}
+
 func main() {
 	r := gin.Default()
 
@@ -148,6 +154,7 @@ func main() {
 	registry.Register("UserResponse", UserResponse{})
 	registry.Register("ErrorResponse", ErrorResponse{})
 	registry.Register("Description", Description{})
+	registry.Register("HelloResponse", HelloResponse{})
 
 	globalMetaData := parser.ParseGlobalMetadata("main.go")
 	// Generate OpenAPI spec
@@ -172,5 +179,5 @@ func main() {
 
 	r.GET("/user/searchauto", SearchUserHandlerAuto)
 
-	r.Run(":8080")
+	r.Run(":8081")
 }
