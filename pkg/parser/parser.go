@@ -119,32 +119,56 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 				case strings.HasPrefix(text, "@Tags "):
 					doc.Tags = strings.Split(strings.TrimPrefix(text, "@Tags "), ",")
 				case strings.HasPrefix(text, "@Success "):
-					// Format: @Success 200 {object} ModelName "Description"
+					// Format: @Success 200 {object} ModelName "Description" OR @Success 200 "Description"
 					parts := strings.Fields(text[len("@Success "):])
-					if len(parts) >= 3 {
+					if len(parts) >= 2 {
 						resp := Response{
 							StatusCode: parts[0],
 							MediaType:  "application/json",
-							Model:      parts[2],
 						}
-						if len(parts) > 3 {
-							resp.Description = strings.Join(parts[3:], " ")
-							resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+
+						// Check if it has a model specification
+						if len(parts) >= 3 && strings.HasPrefix(parts[1], "{") {
+							// Format: @Success 200 {object} ModelName "Description"
+							resp.Model = parts[2]
+							if len(parts) > 3 {
+								resp.Description = strings.Join(parts[3:], " ")
+								resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+							}
+						} else {
+							// Format: @Success 200 "Description" (no model)
+							resp.Model = "" // No model
+							if len(parts) > 1 {
+								resp.Description = strings.Join(parts[1:], " ")
+								resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+							}
 						}
 						doc.Responses[parts[0]] = resp
 					}
 				case strings.HasPrefix(text, "@Failure "):
-					// Format: @Failure 400 {object} ErrorModel "Description"
+					// Format: @Failure 400 {object} ErrorModel "Description" OR @Failure 400 "Description"
 					parts := strings.Fields(text[len("@Failure "):])
-					if len(parts) >= 3 {
+					if len(parts) >= 2 {
 						resp := Response{
 							StatusCode: parts[0],
 							MediaType:  "application/json",
-							Model:      parts[2],
 						}
-						if len(parts) > 3 {
-							resp.Description = strings.Join(parts[3:], " ")
-							resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+
+						// Check if it has a model specification
+						if len(parts) >= 3 && strings.HasPrefix(parts[1], "{") {
+							// Format: @Failure 400 {object} ModelName "Description"
+							resp.Model = parts[2]
+							if len(parts) > 3 {
+								resp.Description = strings.Join(parts[3:], " ")
+								resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+							}
+						} else {
+							// Format: @Failure 400 "Description" (no model)
+							resp.Model = "" // No model
+							if len(parts) > 1 {
+								resp.Description = strings.Join(parts[1:], " ")
+								resp.Description = strings.Trim(resp.Description, `"`) // remove quotes
+							}
 						}
 						doc.Responses[parts[0]] = resp
 					}
