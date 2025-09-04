@@ -18,6 +18,7 @@ import (
 // @Success 200 "Success"
 // @Failure 400 {object} ErrorResponse "Invalid request payload"
 // @Failure 401 "Unauthorized"
+// @Security ApiKeyAuth[x-territory-Key]
 // @Router /hello [get]
 func HelloHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "Hello, world!"})
@@ -39,6 +40,7 @@ func LegacyHello(c *gin.Context) {
 // @Param id path string true "User ID"
 // @Success 200 {object} UserResponse "Returns the user object with id and name"
 // @Header 200 X-RateLimit-Remaining string true "Remaining quota"
+// @Security ApiKeyAuth:X-User-Token
 // @Router /user/{id} [get]
 func GetUserByIDHandler(c *gin.Context) {
 	id := c.Param("id")

@@ -28,13 +28,43 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 	usedSecurity := make(map[string]bool)
 	for _, route := range routes {
 		for _, sec := range route.SecuritySchemes {
-			if !usedSecurity[sec] {
-				openapi.Components.SecuritySchemes[sec] = &SecuritySchemeObject{
-					Type:         "http",
-					Scheme:       "bearer",
-					BearerFormat: "JWT",
+			secKey := sec.Name
+			if sec.HeaderName != "" {
+				secKey = sec.Name + ":" + sec.HeaderName // Unique key for custom headers
+			}
+
+			if !usedSecurity[secKey] {
+				// Create different security scheme objects based on the name
+				var securityScheme *SecuritySchemeObject
+
+				switch sec.Name {
+				case "ApiKeyAuth":
+					headerName := sec.HeaderName
+					if headerName == "" {
+						headerName = "X-API-Key" // Default header name
+					}
+					securityScheme = &SecuritySchemeObject{
+						Type: "apiKey",
+						Name: headerName,
+						In:   "header", // Default to header
+					}
+				case "BearerAuth":
+					securityScheme = &SecuritySchemeObject{
+						Type:         "http",
+						Scheme:       "bearer",
+						BearerFormat: "JWT",
+					}
+				default:
+					// Default to Bearer for unknown security schemes
+					securityScheme = &SecuritySchemeObject{
+						Type:         "http",
+						Scheme:       "bearer",
+						BearerFormat: "JWT",
+					}
 				}
-				usedSecurity[sec] = true
+
+				openapi.Components.SecuritySchemes[secKey] = securityScheme
+				usedSecurity[secKey] = true
 			}
 		}
 	}
@@ -154,9 +184,13 @@ func GenerateSpec(routes []parser.RouteDoc, registry *ModelRegistry, globalMetaD
 		}
 
 		var security []map[string][]string
-		for _, secName := range route.SecuritySchemes {
+		for _, sec := range route.SecuritySchemes {
+			secKey := sec.Name
+			if sec.HeaderName != "" {
+				secKey = sec.Name + ":" + sec.HeaderName // Use same key as in security schemes
+			}
 			security = append(security, map[string][]string{
-				secName: {},
+				secKey: {},
 			})
 		}
 		op.Security = security

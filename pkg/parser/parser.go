@@ -9,6 +9,39 @@ import (
 	"strings"
 )
 
+type SecurityScheme struct {
+	Name       string // e.g., "ApiKeyAuth", "BearerAuth"
+	HeaderName string // For ApiKeyAuth: custom header name (optional)
+}
+
+func parseSecurityScheme(securityText string) SecurityScheme {
+	// Format: "ApiKeyAuth" or "ApiKeyAuth[X-Custom-Header]" or "ApiKeyAuth:X-Custom-Header"
+	scheme := SecurityScheme{}
+
+	// Check for bracket format: ApiKeyAuth[X-Custom-Header]
+	if strings.Contains(securityText, "[") && strings.Contains(securityText, "]") {
+		parts := strings.Split(securityText, "[")
+		scheme.Name = strings.TrimSpace(parts[0])
+		headerPart := strings.Split(parts[1], "]")[0]
+		scheme.HeaderName = strings.TrimSpace(headerPart)
+		return scheme
+	}
+
+	// Check for colon format: ApiKeyAuth:X-Custom-Header
+	if strings.Contains(securityText, ":") {
+		parts := strings.Split(securityText, ":")
+		scheme.Name = strings.TrimSpace(parts[0])
+		if len(parts) > 1 {
+			scheme.HeaderName = strings.TrimSpace(parts[1])
+		}
+		return scheme
+	}
+
+	// Default format: just the scheme name
+	scheme.Name = strings.TrimSpace(securityText)
+	return scheme
+}
+
 type GlobalMetadata struct {
 	GlobalTitle       string
 	GlobalVersion     string
@@ -55,7 +88,7 @@ type RouteDoc struct {
 	RequestBody     *RequestBody
 	Responses       map[string]Response
 	Headers         []Header
-	SecuritySchemes []string
+	SecuritySchemes []SecurityScheme
 	Deprecated      bool
 }
 
@@ -219,8 +252,9 @@ func ParseDirectory(dir string) ([]RouteDoc, error) {
 						})
 					}
 				case strings.HasPrefix(text, "@Security "):
-					doc.SecuritySchemes = append(doc.SecuritySchemes,
-						strings.TrimSpace(strings.TrimPrefix(text, "@Security ")))
+					securityText := strings.TrimSpace(strings.TrimPrefix(text, "@Security "))
+					securityScheme := parseSecurityScheme(securityText)
+					doc.SecuritySchemes = append(doc.SecuritySchemes, securityScheme)
 				case strings.EqualFold(text, "@Deprecated"):
 					doc.Deprecated = true
 				}

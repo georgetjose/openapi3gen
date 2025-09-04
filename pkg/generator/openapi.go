@@ -38,6 +38,8 @@ type SecuritySchemeObject struct {
 	Type         string `json:"type"`
 	Scheme       string `json:"scheme,omitempty"`
 	BearerFormat string `json:"bearerFormat,omitempty"`
+	Name         string `json:"name,omitempty"` // For API Key: header/query/cookie name
+	In           string `json:"in,omitempty"`   // For API Key: "header", "query", or "cookie"
 }
 
 type Operation struct {

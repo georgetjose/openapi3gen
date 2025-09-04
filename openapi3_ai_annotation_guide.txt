@@ -16,8 +16,10 @@ Annotations are single-line comments starting with `// @` placed immediately abo
   - `<type>`: string, integer, boolean, etc.
   - `<required>`: true or false
 - `@RequestBody {object} <ModelName> <required> "<description>"`
-- `@Success <status_code> {object} <ModelName> "<description>"`
+- `@Success <status_code> {object} <ModelName> "<description>"` OR `@Success <status_code> "<description>"`
+- `@Failure <status_code> {object} <ModelName> "<description>"` OR `@Failure <status_code> "<description>"`
 - `@Header <status_code> <name> <type> <required> "<description>"`
+- `@Security <SecuritySchemeName>` OR `@Security <SecuritySchemeName>[<CustomHeaderName>]` OR `@Security <SecuritySchemeName>:<CustomHeaderName>`
 - `@Router <path> [<method>]`
 - `@Deprecated` (if the endpoint is deprecated)
 
@@ -32,6 +34,64 @@ A handler is a function with signature: `func HandlerName(c *gin.Context) { ... 
 - If the handler sets response headers, add `@Header`.
 - Always add `@Router` with the route path and HTTP method.
 
+## Detailed Annotation Specifications
+
+### @Success and @Failure Formats
+Both `@Success` and `@Failure` support two formats:
+1. **With model**: `@Success <status_code> {object} <ModelName> "<description>"`
+2. **Without model**: `@Success <status_code> "<description>"`
+
+Examples:
+```go
+// @Success 200 {object} UserResponse "Returns the user object with id and name"
+// @Success 200 "Success response"
+// @Failure 400 {object} ErrorResponse "Invalid request payload"
+// @Failure 401 "Unauthorized"
+```
+
+### @Security Formats
+The `@Security` annotation supports multiple formats for different authentication schemes:
+
+1. **Basic format**: `@Security <SecuritySchemeName>`
+   - Example: `@Security BearerAuth`
+   - Example: `@Security ApiKeyAuth`
+
+2. **Custom header with brackets**: `@Security <SecuritySchemeName>[<CustomHeaderName>]`
+   - Example: `@Security ApiKeyAuth[x-territory-Key]`
+
+3. **Custom header with colon**: `@Security <SecuritySchemeName>:<CustomHeaderName>`
+   - Example: `@Security ApiKeyAuth:X-User-Token`
+
+### Security Scheme Types
+The system recognizes these predefined security schemes:
+
+- **ApiKeyAuth**: Generates API Key authentication in header
+  - Default header: `X-API-Key`
+  - Custom header can be specified using bracket or colon notation
+- **BearerAuth**: Generates JWT Bearer token authentication
+  - Uses `Authorization: Bearer <token>` header
+- **Other schemes**: Default to Bearer authentication
+
+## Auto-Detection Features
+The openapi3gen system provides automatic detection capabilities:
+
+### Auto-Detection of Parameters
+- **Path parameters**: Automatically detects `c.Param("paramName")` calls
+- **Query parameters**: Automatically detects `c.Query("paramName")` calls  
+- **Header parameters**: Automatically detects `c.GetHeader("HeaderName")` calls
+
+### Auto-Detection of Request Bodies
+- Automatically detects `c.ShouldBindJSON(&structVar)` calls
+- Extracts the struct type from variable declarations
+
+### Auto-Detection of Response Bodies
+- Automatically detects `c.JSON(statusCode, responseObject)` calls
+- Maps status codes to response model types
+
+### Auto-Detection of Response Headers  
+- Automatically detects `c.Header("HeaderName", "value")` calls
+- Associates headers with 200 status code by default
+
 ## Example
 
 ```go
@@ -41,9 +101,72 @@ A handler is a function with signature: `func HandlerName(c *gin.Context) { ... 
 // @Param id path string true "User ID"
 // @Success 200 {object} UserResponse "Returns the user object with id and name"
 // @Header 200 X-RateLimit-Remaining string true "Remaining quota"
+// @Security ApiKeyAuth:X-User-Token
 // @Router /user/{id} [get]
 func GetUserByIDHandler(c *gin.Context) {
-    // handler code
+    id := c.Param("id")
+    c.Header("X-RateLimit-Remaining", "29")
+    c.JSON(200, UserResponse{ID: id, Name: "George T Jose"})
+}
+```
+
+## Examples of Different Security Schemes
+
+```go
+// Basic Bearer Auth
+// @Security BearerAuth
+// @Router /protected [get]
+func ProtectedHandler(c *gin.Context) { ... }
+
+// API Key with default header (X-API-Key)
+// @Security ApiKeyAuth
+// @Router /api-key [get]
+func ApiKeyHandler(c *gin.Context) { ... }
+
+// API Key with custom header using bracket notation
+// @Security ApiKeyAuth[x-territory-Key]
+// @Router /territory [get]
+func TerritoryHandler(c *gin.Context) { ... }
+
+// API Key with custom header using colon notation  
+// @Security ApiKeyAuth:X-User-Token
+// @Router /user-auth [get]
+func UserAuthHandler(c *gin.Context) { ... }
+```
+
+## Examples with Auto-Detection
+
+```go
+// Manual annotation approach
+// @Summary Create a user
+// @Description Creates a new user
+// @Tags user
+// @RequestBody {object} CreateUserRequest true "User payload"
+// @Success 201 {object} UserResponse
+// @Failure 400 {object} ErrorResponse "Invalid request payload"
+// @Security BearerAuth
+// @Router /users [post]
+func CreateUserHandler(c *gin.Context) {
+    var req CreateUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(400, ErrorResponse{Message: err.Error()})
+        return
+    }
+    c.JSON(201, UserResponse{ID: "123", Name: req.Name})
+}
+
+// Auto-detection approach (minimal annotations)
+// @Summary Create a user Auto Detect
+// @Description Creates a new user
+// @Tags user
+// @Router /usersauto [post]
+func CreateUserHandlerAutoDetect(c *gin.Context) {
+    var req CreateUserRequest  // Auto-detected as request body
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(400, ErrorResponse{Message: err.Error()})  // Auto-detected as 400 response
+        return
+    }
+    c.JSON(201, UserResponse{ID: "123", Name: req.Name})  // Auto-detected as 201 response
 }
 ```
 
@@ -62,7 +185,57 @@ Example:
 package main
 ```
 
-## Notes
+## Schema Generation with Struct Tags
+
+The system supports enhanced schema generation using struct tags:
+
+```go
+type CreateUserRequest struct {
+    Name    string  `json:"name" openapi:"desc=Full name of the user"`
+    Email   string  `json:"email" openapi:"desc=User's email address"`
+    Address Address `json:"address" openapi:"desc=User's address"`
+}
+
+type Address struct {
+    State   string `json:"state" openapi:"desc=State"`
+    ZipCode int    `json:"zip_code" openapi:"desc=ZIP code"`
+}
+```
+
+### Struct Tag Format
+- Use `openapi:"desc=Description text"` to add field descriptions
+- The description will appear in the generated OpenAPI schema
+- Supports nested struct references automatically
+
+## Best Practices
+
+### When to Use Manual Annotations vs Auto-Detection
+1. **Use manual annotations when**:
+   - You need specific descriptions for parameters/responses
+   - You want to control which parameters are required
+   - You need specific error response models
+   - You want custom security schemes
+
+2. **Rely on auto-detection when**:
+   - Building prototypes or simple APIs
+   - Parameters and responses are straightforward
+   - You want minimal boilerplate code
+
+### Annotation Order
+Follow this recommended order for annotations:
+```go
+// @Summary <one-line summary>
+// @Description <detailed description>
+// @Tags <tag1,tag2>
+// @Deprecated (if applicable)
+// @Param <parameters...>
+// @RequestBody <request body spec>
+// @Success <success responses...>
+// @Failure <error responses...>  
+// @Header <response headers...>
+// @Security <security schemes...>
+// @Router <path> [<method>]
+```
 
 ## Model Registration Instructions
 For every model referenced in `@RequestBody`, `@Success`, and `@Failure` annotations, ensure the model is registered using the following pattern in your main function or initialization code:
